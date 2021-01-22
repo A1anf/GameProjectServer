@@ -21,13 +21,13 @@ server.on('message', function(message, remote) {
     console.log(`server got: ${value} from ${remote.address}:${remote.port}`);
 
     addToClients(remote.address, remote.port);
-    repeatToClients(message)
+    repeatToClients(message);
 });
 
 function addToClients(address, port) {
     let clientData = {
-        host: remote.address,
-        port: remote.port
+        host: address,
+        port: port
     };
     if (!clients.includes(clientData)) {
         clients.push(clientData);
