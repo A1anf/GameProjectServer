@@ -15,7 +15,8 @@ server.on('listening', function() {
 });
 
 server.on('message', function(message, remote) {
-    console.log(`server got: ${message} from ${remote.address}:${remote.port}`);
+    let value = message.readUInt16BE(0).toString(16)
+    console.log(`server got: ${value} from ${remote.address}:${remote.port}`);
 });
 
 server.bind(PORT, HOST);
