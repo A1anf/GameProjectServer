@@ -89,7 +89,7 @@ function sendClientSpawnLocation(address, port) {
     const buffer = Buffer.alloc(4);
     buffer.writeUInt16LE(PACKET_TYPE_REQUEST_SPAWN);
     buffer.writeUInt16LE(spawnLocation, 2);
-    console.log(buffer);
+    // console.log(buffer);
     server.send(buffer, 0, buffer.length, port, address, function(error, bytes) {
         if (error) {
             console.log(`server error sending spawn location of ${spawnLocation} to ${address}:${port}`);
