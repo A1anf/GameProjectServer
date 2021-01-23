@@ -78,9 +78,9 @@ function sendClientConnectionAcknowledgement(address, port) {
     var buffer = Buffer.alloc(2, PACKET_TYPE_CONNECTION);
     server.send(buffer, 0, buffer.length, port, address, function(error, bytes) {
         if (error) {
-            console.log(`server error sending connection acknowledgement to ${item.host}:${item.port}`);
+            console.log(`server error sending connection acknowledgement to ${address}:${port}`);
         }
-        console.log(`server sent connection acknowledgement to ${item.host}:${item.port}`);
+        console.log(`server sent connection acknowledgement to ${address}:${port}`);
     });
 }
 
@@ -89,9 +89,9 @@ function sendClientSpawnLocation(address, port) {
     var buffer = Buffer.alloc(2, spawnLocation);
     server.send(buffer, 0, buffer.length, port, address, function(error, bytes) {
         if (error) {
-            console.log(`server error sending spawn location of ${spawnLocation} to ${item.host}:${item.port}`);
+            console.log(`server error sending spawn location of ${spawnLocation} to ${address}:${port}`);
         }
-        console.log(`server sent spawn location of ${spawnLocation} to ${item.host}:${item.port}`);
+        console.log(`server sent spawn location of ${spawnLocation} to ${address}:${port}`);
     });
 }
 
