@@ -8,7 +8,10 @@ const PACKET_TYPE_CONNECTION = 0;
 const PACKET_TYPE_REQUEST_SPAWN = 1;
 const PACKET_TYPE_DISCONNECT = 2;
 
+var currentClientId = 1;
 var clients = {};
+var clientsIdMap = {};
+
 const spawnLocations = [
     1, 2, 3, 4, 5, 6, 7, 8, 9, 10
 ];
@@ -30,8 +33,10 @@ server.on('message', function(message, remote) {
     console.log(`client sent ${packetType} from ${remote.address}:${remote.port}`);
     switch (packetType) {
         case PACKET_TYPE_CONNECTION:
-            addToClients(remote.address, remote.port);
-            sendClientConnectionAcknowledgement(remote.address, remote.port);
+            const clientId = currentClientId;
+            addToClients(remote.address, remote.port, clientId);
+            sendClientConnectionAcknowledgement(remote.address, remote.port, clientId);
+            currentClientId += 1;
             break;
         case PACKET_TYPE_REQUEST_SPAWN:
             sendClientSpawnLocation(remote.address, remote.port);
@@ -64,18 +69,20 @@ function shuffle(array) {
     return array;
 }
 
-function addToClients(address, port) {
-    if (!Object.keys(clients).includes(address)) {
-        clients[address] = port;
-    }
+function addToClients(address, port, clientId) {
+    clients[address] = port;
+    clientsIdMap[clientId] = address
 }
 
 function removeFromClients(address) {
+    // TODO: Delete the clientId / address from the clientsIdMap
     delete clients[address];
 }
 
-function sendClientConnectionAcknowledgement(address, port) {
-    var buffer = Buffer.alloc(2, PACKET_TYPE_CONNECTION);
+function sendClientConnectionAcknowledgement(address, port, clientId) {
+    const buffer = Buffer.alloc(4);
+    buffer.writeUInt16LE(PACKET_TYPE_CONNECTION);
+    buffer.writeUInt16LE(clientId, 2);
     server.send(buffer, 0, buffer.length, port, address, function(error, bytes) {
         if (error) {
             console.log(`server error sending connection acknowledgement to ${address}:${port}`);
