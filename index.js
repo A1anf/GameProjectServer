@@ -92,7 +92,8 @@ function sendClientConnectionAcknowledgement(address, port, clientId) {
 }
 
 function sendClientSpawnLocation(address, port) {
-    const spawnLocation = spawnLocations.pop();
+    const spawnLocation = spawnLocations[Math.floor(Math.random() * spawnLocations.length)];
+    // const spawnLocation = spawnLocations.pop();
     const buffer = Buffer.alloc(4);
     buffer.writeUInt16LE(PACKET_TYPE_REQUEST_SPAWN);
     buffer.writeUInt16LE(spawnLocation, 2);
