@@ -75,7 +75,7 @@ function removeFromClients(address) {
 }
 
 function sendClientConnectionAcknowledgement(address, port) {
-    const buffer = new UInt8Array([PACKET_TYPE_CONNECTION]);
+    var buffer = Buffer.alloc(2, PACKET_TYPE_CONNECTION);
     server.send(buffer, 0, buffer.length, port, address, function(error, bytes) {
         if (error) {
             console.log(`server error sending connection acknowledgement to ${item.host}:${item.port}`);
@@ -86,7 +86,7 @@ function sendClientConnectionAcknowledgement(address, port) {
 
 function sendClientSpawnLocation(address, port) {
     const spawnLocation = spawnLocations.pop();
-    const buffer = new UInt8Array([spawnLocation]);
+    var buffer = Buffer.alloc(2, spawnLocation);
     server.send(buffer, 0, buffer.length, port, address, function(error, bytes) {
         if (error) {
             console.log(`server error sending spawn location of ${spawnLocation} to ${item.host}:${item.port}`);
