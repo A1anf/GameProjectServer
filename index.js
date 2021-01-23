@@ -4,7 +4,16 @@ const HOST = '104.248.77.64';
 const dgram = require('dgram');
 const server = dgram.createSocket('udp4');
 
-var clients = [];
+const PACKET_TYPE_CONNECTION = 0;
+const PACKET_TYPE_REQUEST_SPAWN = 1;
+const PACKET_TYPE_DISCONNECT = 2;
+
+var clients = {};
+const spawnLocations = [
+    1, 2, 3, 4, 5, 6, 7, 8, 9, 10
+];
+
+var remainingSpawnLocations = shuffle(spawnLocations);
 
 server.on('error', (err) => {
     console.log(`server error:\n${err.stack}`);
@@ -17,33 +26,85 @@ server.on('listening', function() {
 });
 
 server.on('message', function(message, remote) {
-    let value = message.readUInt16LE(0).toString();
-    console.log(`server got: ${value} from ${remote.address}:${remote.port}`);
+    const packetType = message.readUInt16LE(0);
+    console.log(`client sent ${packetType} from ${remote.address}:${remote.port}`);
+    switch (packetType) {
+        case PACKET_TYPE_CONNECTION:
+            addToClients(remote.address, remote.port);
+            sendClientConnectionAcknowledgement(remote.address, remote.port);
+            break;
+        case PACKET_TYPE_REQUEST_SPAWN:
+            sendClientSpawnLocation(remote.address, remote.port);
+            break;
+        case PACKET_TYPE_DISCONNECT:
+            removeFromClients(remote.address);
+            break;
+        default:
+            break
+    }
 
-    addToClients(remote.address, remote.port);
-    repeatToClients(message);
+    
 });
 
+function shuffle(array) {
+    var currentIndex = array.length, temporaryValue, randomIndex;
+
+    // While there remain elements to shuffle...
+    while (0 !== currentIndex) {
+        // Pick a remaining element...
+        randomIndex = Math.floor(Math.random() * currentIndex);
+        currentIndex -= 1;
+
+        // And swap it with the current element.
+        temporaryValue = array[currentIndex];
+        array[currentIndex] = array[randomIndex];
+        array[randomIndex] = temporaryValue;
+    }
+
+    return array;
+}
+
 function addToClients(address, port) {
-    let clientData = {
-        host: address,
-        port: port
-    };
-    if (!clients.includes(clientData)) {
-        clients.push(clientData);
+    if (!Object.keys(clients).includes(address)) {
+        clients[address] = port;
     }
 }
 
-function repeatToClients(buffer) {
-    clients.forEach(function(item, index, array) {
-        server.send(buffer, 0, buffer.length, item.port, item.host, function(error, bytes) {
-            if (error) {
-                console.log(`server error with sending to ${item.host}:${item.port}`);
-            }
-            console.log(`server sent to client ${item.host}:${item.port}`);
-        });
-    });
-    console.log(`server sent to all clients`);
+function removeFromClients(address) {
+    delete clients[address];
 }
+
+function sendClientConnectionAcknowledgement(address, port) {
+    const buffer = new UInt8Array([PACKET_TYPE_CONNECTION]);
+    server.send(buffer, 0, buffer.length, port, address, function(error, bytes) {
+        if (error) {
+            console.log(`server error sending connection acknowledgement to ${item.host}:${item.port}`);
+        }
+        console.log(`server sent connection acknowledgement to ${item.host}:${item.port}`);
+    });
+}
+
+function sendClientSpawnLocation(address, port) {
+    const spawnLocation = spawnLocations.pop();
+    const buffer = new UInt8Array([spawnLocation]);
+    server.send(buffer, 0, buffer.length, port, address, function(error, bytes) {
+        if (error) {
+            console.log(`server error sending spawn location of ${spawnLocation} to ${item.host}:${item.port}`);
+        }
+        console.log(`server sent spawn location of ${spawnLocation} to ${item.host}:${item.port}`);
+    });
+}
+
+// function repeatToClients(buffer) {
+//     clients.forEach(function(item, index, array) {
+//         server.send(buffer, 0, buffer.length, item.port, item.host, function(error, bytes) {
+//             if (error) {
+//                 console.log(`server error with sending to ${item.host}:${item.port}`);
+//             }
+//             console.log(`server sent to client ${item.host}:${item.port}`);
+//         });
+//     });
+//     console.log(`server sent to all clients`);
+// }
 
 server.bind(PORT, HOST);
