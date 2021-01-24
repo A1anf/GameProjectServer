@@ -45,6 +45,7 @@ server.on('message', function(message, remote) {
         case PacketType.PACKET_TYPE_REQUEST_SPAWN:
             const spawnLocation = spawnLocations[Math.floor(Math.random() * spawnLocations.length)];
             // const spawnLocation = spawnLocations.pop();
+            const clientId = lookupClientIdFromAddress(remote.address);
             sendClientSpawnLocation(remote.address, remote.port, spawnLocation);
             broadcastNewClientSpawnLocation(clientId, spawnLocation);
             break;
@@ -75,6 +76,14 @@ function shuffle(array) {
     }
 
     return array;
+}
+
+function lookupClientIdFromAddress(address) {
+    for (const clientId in clientsIdMap) {
+        if (clientsIdMap[clientId] == address) {
+            return clientId
+        }
+    }
 }
 
 function addToClients(address, port, clientId) {
