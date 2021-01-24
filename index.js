@@ -4,9 +4,13 @@ const HOST = '104.248.77.64';
 const dgram = require('dgram');
 const server = dgram.createSocket('udp4');
 
-const PACKET_TYPE_CONNECTION = 0;
-const PACKET_TYPE_REQUEST_SPAWN = 1;
-const PACKET_TYPE_DISCONNECT = 2;
+const PacketType = {
+    PACKET_TYPE_CONNECTION: 0,
+    PACKET_TYPE_REQUEST_SPAWN: 1,
+    PACKET_TYPE_DISCONNECT: 2,
+    PACKET_TYPE_NEW_CONNECTION: 3,
+    PACKET_TYPE_INPUT: 4
+}
 
 var currentClientId = 1;
 var clients = {};
@@ -32,17 +36,21 @@ server.on('message', function(message, remote) {
     const packetType = message.readUInt16LE(0);
     console.log(`client sent ${packetType} from ${remote.address}:${remote.port}`);
     switch (packetType) {
-        case PACKET_TYPE_CONNECTION:
+        case PacketType.PACKET_TYPE_CONNECTION:
             const clientId = currentClientId;
             addToClients(remote.address, remote.port, clientId);
             sendClientConnectionAcknowledgement(remote.address, remote.port, clientId);
             currentClientId += 1;
             break;
-        case PACKET_TYPE_REQUEST_SPAWN:
-            sendClientSpawnLocation(remote.address, remote.port);
+        case PacketType.PACKET_TYPE_REQUEST_SPAWN:
+            const spawnLocation = spawnLocations[Math.floor(Math.random() * spawnLocations.length)];
+            // const spawnLocation = spawnLocations.pop();
+            sendClientSpawnLocation(remote.address, remote.port, spawnLocation);
+            broadcastNewClientSpawnLocation(clientId, spawnLocation);
             break;
-        case PACKET_TYPE_DISCONNECT:
+        case PacketType.PACKET_TYPE_DISCONNECT:
             removeFromClients(remote.address);
+        case PacketType.PACKET_TYPE_REQUEST_SPAWN:
             break;
         default:
             break
@@ -81,7 +89,7 @@ function removeFromClients(address) {
 
 function sendClientConnectionAcknowledgement(address, port, clientId) {
     const buffer = Buffer.alloc(4);
-    buffer.writeUInt16LE(PACKET_TYPE_CONNECTION);
+    buffer.writeUInt16LE(PacketType.PACKET_TYPE_CONNECTION);
     buffer.writeUInt16LE(clientId, 2);
     server.send(buffer, 0, buffer.length, port, address, function(error, bytes) {
         if (error) {
@@ -91,11 +99,9 @@ function sendClientConnectionAcknowledgement(address, port, clientId) {
     });
 }
 
-function sendClientSpawnLocation(address, port) {
-    const spawnLocation = spawnLocations[Math.floor(Math.random() * spawnLocations.length)];
-    // const spawnLocation = spawnLocations.pop();
+function sendClientSpawnLocation(address, port, spawnLocation) {
     const buffer = Buffer.alloc(4);
-    buffer.writeUInt16LE(PACKET_TYPE_REQUEST_SPAWN);
+    buffer.writeUInt16LE(PacketType.PACKET_TYPE_REQUEST_SPAWN);
     buffer.writeUInt16LE(spawnLocation, 2);
     console.log(buffer);
     server.send(buffer, 0, buffer.length, port, address, function(error, bytes) {
@@ -106,16 +112,25 @@ function sendClientSpawnLocation(address, port) {
     });
 }
 
-// function repeatToClients(buffer) {
-//     clients.forEach(function(item, index, array) {
-//         server.send(buffer, 0, buffer.length, item.port, item.host, function(error, bytes) {
-//             if (error) {
-//                 console.log(`server error with sending to ${item.host}:${item.port}`);
-//             }
-//             console.log(`server sent to client ${item.host}:${item.port}`);
-//         });
-//     });
-//     console.log(`server sent to all clients`);
-// }
+function broadcastNewClientSpawnLocation(ignoredClientId, spawnLocation) {
+    const ignoredClientAddress = clientsIdMap[ignoredClientId];
+
+    const buffer = Buffer.alloc(4);
+    buffer.writeUInt16LE(PacketType.PACKET_TYPE_NEW_CONNECTION);
+    buffer.writeUInt16LE(spawnLocation, 2);
+    for (const address in clients) {
+        if (address == ignoredClientAddress) {
+            continue
+        }
+
+        const port = clients[address];
+        server.send(buffer, 0, buffer.length, port, address, function(error, bytes) {
+            if (error) {
+                console.log(`server error with broadcasting new client spawn location of ${spawnLocation} to ${address}:${port}`);
+            }
+            console.log(`server broadcasted new client spawn location of ${spawnLocation} to ${address}:${port}`);
+        })
+    }
+}
 
 server.bind(PORT, HOST);
