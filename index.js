@@ -51,7 +51,9 @@ server.on('message', function(message, remote) {
             break;
         case PacketType.PACKET_TYPE_DISCONNECT:
             removeFromClients(remote.address);
-        case PacketType.PACKET_TYPE_REQUEST_SPAWN:
+        case PacketType.PACKET_TYPE_INPUT:
+            const inputClientId = lookupClientIdFromAddress(remote.address);
+            broadcastNewInput(inputClientId, message);
             break;
         default:
             break
@@ -138,6 +140,24 @@ function broadcastNewClientSpawnLocation(ignoredClientId, spawnLocation) {
                 console.log(`server error with broadcasting new client spawn location of ${spawnLocation} to ${address}:${port}`);
             }
             console.log(`server broadcasted new client spawn location of ${spawnLocation} to ${address}:${port}`);
+        })
+    }
+}
+
+function broadcastNewInput(ignoredClientId, buffer) {
+    const ignoredClientAddress = clientsIdMap[ignoredClientId];
+
+    for (const address in clients) {
+        if (address == ignoredClientAddress) {
+            continue
+        }
+
+        const port = clients[address];
+        server.send(buffer, 0, buffer.length, port, address, function(error, bytes) {
+            if (error) {
+                console.log(`server error with broadcasting new input to ${address}:${port}`);
+            }
+            console.log(`server broadcasted new input to ${address}:${port}`);
         })
     }
 }
