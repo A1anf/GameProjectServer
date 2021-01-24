@@ -50,7 +50,8 @@ server.on('message', function(message, remote) {
             broadcastNewClientSpawnLocation(spawnRequestClientId, spawnLocation);
             break;
         case PacketType.PACKET_TYPE_DISCONNECT:
-            removeFromClients(remote.address);
+            let disconnectedClientId = lookupClientIdFromAddress(address);
+            removeFromClients(remote.address, disconnectedClientId);
         case PacketType.PACKET_TYPE_INPUT:
             const inputClientId = lookupClientIdFromAddress(remote.address);
             broadcastNewInput(inputClientId, message);
@@ -58,8 +59,6 @@ server.on('message', function(message, remote) {
         default:
             break
     }
-
-    
 });
 
 function shuffle(array) {
@@ -93,8 +92,8 @@ function addToClients(address, port, clientId) {
     clientsIdMap[clientId] = address
 }
 
-function removeFromClients(address) {
-    // TODO: Delete the clientId / address from the clientsIdMap
+function removeFromClients(address, clientId) {
+    delete clientsIdMap[clientId];
     delete clients[address];
 }
 
